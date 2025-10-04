@@ -1,5 +1,3 @@
-pip install plotly
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -220,5 +218,6 @@ top_companies = (
 for _, row in top_companies.iterrows():
     reason = row["recommend_reason"] if "recommend_reason" in row else "ESG 상승 추세 & 안정적 재무 구조"
     st.metric(row["company"], round(row["esg_avg"], 2), reason)
+
 
 
