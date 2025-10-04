@@ -1,0 +1,3 @@
+@echo off
+start https://kcircle-gydy2peuprkgk39my2ffkr.streamlit.app/
+exit
