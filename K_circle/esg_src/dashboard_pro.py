@@ -150,3 +150,72 @@ for i, col in enumerate([col1, col2, col3]):
         with col:
             st.metric(c["company"], round(c["esg_avg"], 2), reason)
 
+import streamlit as st
+import pandas as pd
+import os
+
+# Plotly 임포트 → 설치 안 되어 있을 경우 대비
+try:
+    import plotly.express as px
+except ImportError:
+    st.warning("⚠️ Plotly 라이브러리가 설치되어 있지 않습니다. "
+               "requirements.txt에 plotly를 추가하고 'pip install -r requirements.txt'로 설치하세요.")
+
+# =========================
+# 데이터 로드
+# =========================
+base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+results_path = os.path.join(base_path, "results.csv")
+
+df = pd.read_csv(results_path, encoding="utf-8-sig")
+
+# =========================
+# ESG 세부 점수
+# =========================
+st.subheader("🌱 ESG 세부 점수")
+st.dataframe(df[["year", "company", "esg_env", "esg_soc", "esg_gov"]].head())
+
+company = st.sidebar.selectbox("기업 선택", df["company"].unique())
+company_data = df[df["company"] == company].sort_values("year")
+latest = company_data.iloc[-1]
+
+col1, col2, col3 = st.columns(3)
+col1.metric("환경 (E)", round(latest["esg_env"], 2))
+col2.metric("사회 (S)", round(latest["esg_soc"], 2))
+col3.metric("지배구조 (G)", round(latest["esg_gov"], 2))
+
+# =========================
+# 뉴스 감성분석
+# =========================
+st.subheader("📰 최근 ESG 뉴스 감성 분석")
+if "sentiment_pos" in latest and "sentiment_neg" in latest:
+    pos = latest["sentiment_pos"]
+    neg = latest["sentiment_neg"]
+    st.write(f"긍정 {pos:.1f}% | 부정 {neg:.1f}%")
+else:
+    st.info("뉴스 감성분석 데이터가 없습니다.")
+
+# =========================
+# 그린워싱 탐지
+# =========================
+st.subheader("⚠️ 그린워싱 탐지")
+if "greenwash_flag" in latest:
+    if latest["greenwash_flag"] == 1:
+        st.error("⚠️ ESG 발표와 실제 뉴스 내용 불일치 (그린워싱 의심)")
+    else:
+        st.success("✅ ESG 발표와 실제 뉴스 내용 일치")
+else:
+    st.info("그린워싱 탐지 데이터가 없습니다.")
+
+# =========================
+# 추천 기업 근거
+# =========================
+st.subheader("✅ 추천 기업")
+top_companies = (
+    df.groupby("company")["esg_avg"].mean().nlargest(3).reset_index()
+)
+
+for _, row in top_companies.iterrows():
+    reason = row["recommend_reason"] if "recommend_reason" in row else "ESG 상승 추세 & 안정적 재무 구조"
+    st.metric(row["company"], round(row["esg_avg"], 2), reason)
+
